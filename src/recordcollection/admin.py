@@ -141,7 +141,7 @@ class AlbumAdmin(admin.ModelAdmin):
             super().get_queryset(request)
             .prefetch_related("album_artists__artist", "genres")
             .annotate(
-                track_count=Count("tracks"),
+                track_count=Count("tracks", distinct=True),
                 artist_order=Subquery(
                     AlbumArtist.objects.filter(album=OuterRef("pk")).values(name=Lower("artist__name"))[:1],
                 ),
@@ -207,7 +207,7 @@ class TrackAdmin(admin.ModelAdmin):
         ("disc_number", "track_number"),
         ("year", "duration"),
         "genres",
-        ("file_path", "file_hash"),
+        "file_path",
         ("musicbrainz_id", "spotify_id", "discogs_id"),
     ]
     list_filter = [

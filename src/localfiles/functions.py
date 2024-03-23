@@ -31,21 +31,23 @@ def file_to_tinytag(file: Path) -> TinyTag:
 
 
 def tinytag_to_track(file: Path, tag: TinyTag, file_idx: int, album_id: int | None = None) -> Track:
-    file_hash = get_file_hash(file)
     file_path = str(file.absolute())
     year_match = re.match(r"^(\d{4}).*$", tag.year) if tag.year else None
+    disc_number = int_or_none(tag.disc) or 1
+    track_number = int_or_none(tag.track) or file_idx + 1
+    year = int(year_match.group(1)) if year_match else None
+    duration = datetime.timedelta(seconds=round(tag.duration)) if tag.duration else None
+    title = tag.title or file_to_track_title(file)
 
-    track = Track.objects.update_or_create(
+    track = Track.objects.filter(Q(file_path=None) | Q(file_path=file_path)).update_or_create(
         album_id=album_id,
-        disc_number=int_or_none(tag.disc) or 1,
-        track_number=int_or_none(tag.track) or file_idx + 1,
+        disc_number=disc_number,
+        track_number=track_number,
         defaults={
             "file_path": file_path,
-            "file_hash": file_hash,
-            "title": tag.title or file_to_track_title(file),
-            "album_id": album_id,
-            "year": int(year_match.group(1)) if year_match else None,
-            "duration": datetime.timedelta(seconds=round(tag.duration)) if tag.duration else None,
+            "title": title,
+            "year": year,
+            "duration": duration,
         }
     )[0]
     artist_name = tag.artist or tag.albumartist
@@ -61,11 +63,19 @@ def tinytag_to_track(file: Path, tag: TinyTag, file_idx: int, album_id: int | No
 
 
 @transaction.atomic
-def scan_audio_files(files: list[Path], is_compilation: bool = False):
+def scan_audio_files(
+    files: list[Path],
+    existing_file_paths: list[str],
+    is_compilation: bool = False,
+    total: bool = False,
+):
     albums: set[Album] = set()
     album_artists = []
 
     for file_idx, file in enumerate(sorted(files, key=lambda f: f.name)):
+        if not total and str(file.absolute()) in existing_file_paths:
+            continue
+
         tag = file_to_tinytag(file)
         artist_name = tag.artist or tag.albumartist
         album_id: int | None = None
@@ -137,34 +147,43 @@ def scan_audio_files(files: list[Path], is_compilation: bool = False):
         print(repr(album))
 
 
-def scan_directory_recursive(directory: Path, exceptions: list[Path], is_compilation: bool = False):
+def scan_directory_recursive(
+    directory: Path,
+    exceptions: list[Path],
+    existing_file_paths: list[str],
+    is_compilation: bool = False,
+    total: bool = False,
+) -> set[str]:
     audio_files: list[Path] = []
     is_compilation = is_compilation or directory.name.lower() == "various artists"
+    file_paths: set[str] = set(existing_file_paths)
+    print(directory.absolute())
 
     for file in directory.iterdir():
         if any(file.is_relative_to(e) for e in exceptions):
             continue
         if file.is_file() and TinyTag.is_supported(file.name):
             audio_files.append(file)
+            file_paths.add(str(file.absolute()))
         elif file.is_dir():
-            scan_directory_recursive(
-                directory=file,
-                exceptions=exceptions,
-                is_compilation=is_compilation,
+            file_paths.update(
+                scan_directory_recursive(
+                    directory=file,
+                    exceptions=exceptions,
+                    existing_file_paths=existing_file_paths,
+                    is_compilation=is_compilation,
+                    total=total,
+                )
             )
 
-    scan_audio_files(files=audio_files, is_compilation=is_compilation)
+    scan_audio_files(
+        files=audio_files,
+        existing_file_paths=existing_file_paths,
+        is_compilation=is_compilation,
+        total=total,
+    )
 
-
-def scan_file_system(roots: list[Path], exceptions: list[Path] | None = None, all_is_compilation: bool = False):
-    exceptions = exceptions or []
-
-    for root in roots:
-        scan_directory_recursive(
-            directory=root,
-            exceptions=exceptions,
-            is_compilation=all_is_compilation,
-        )
+    return file_paths
 
 
 def get_file_hash(file: Path) -> str:

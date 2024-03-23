@@ -4,7 +4,19 @@ from spotify.dataclasses import SpotifyAlbum, SpotifyUserAlbumsResponse
 from spotify.request import spotify_get
 
 
-def get_user_albums_responses() -> Iterator[SpotifyUserAlbumsResponse]:
+def get_user_albums() -> list[SpotifyAlbum]:
+    albums = []
+    uri: str | None = "https://api.spotify.com/v1/me/albums?limit=50"
+
+    while uri is not None:
+        response = SpotifyUserAlbumsResponse.from_dict(spotify_get(uri).json())
+        albums.extend(response.items)
+        uri = response.next
+
+    return albums
+
+
+def iterate_user_albums_responses() -> Iterator[SpotifyUserAlbumsResponse]:
     uri: str | None = "https://api.spotify.com/v1/me/albums?limit=50"
 
     while uri is not None:

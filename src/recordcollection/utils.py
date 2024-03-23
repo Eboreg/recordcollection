@@ -3,7 +3,7 @@ from typing import Any, Iterable, TypeVar
 
 import requests
 
-from recordcollection.models import Genre
+from recordcollection.models import Artist, Genre
 
 
 _T = TypeVar("_T")
@@ -68,3 +68,7 @@ def import_musicbrainz_genres():
                 else:
                     new_genres.append(Genre(name=capitalize(line)))
         Genre.objects.bulk_create(new_genres)
+
+
+def delete_orphan_artists():
+    Artist.objects.filter(albums=None, tracks=None).delete()

@@ -119,7 +119,11 @@ class SpotifyAlbum(AbstractBaseRecord):
         artist_names = [a.name for a in self.artists]
         is_compilation = self.album_type == "compilation" and "Various Artists" in artist_names
 
-        album_qs = Album.objects.filter(title__iexact=self.name, medium=Album.Medium.STREAMING)
+        album_qs = Album.objects.filter(
+            Q(spotify_id=None) | Q(spotify_id=self.id),
+            title__iexact=self.name,
+            medium=Album.Medium.STREAMING,
+        )
         if is_compilation:
             album_qs = album_qs.filter(is_compilation=True)
         elif artist_names:

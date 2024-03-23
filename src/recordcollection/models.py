@@ -32,9 +32,10 @@ class Track(AbstractItem):
     artists = models.ManyToManyField("Artist", related_name="tracks", through="TrackArtist")
     duration = models.DurationField(null=True, default=None, blank=True)
     file_path = models.CharField(max_length=1000, null=True, default=None, blank=True)
-    file_hash = models.CharField(max_length=100, null=True, default=None, blank=True)
     genres = models.ManyToManyField("Genre", related_name="tracks", blank=True)
+
     track_artists: models.Manager["TrackArtist"]
+    album_id: int | None
 
     class Meta:
         ordering = [Lower("title")]
