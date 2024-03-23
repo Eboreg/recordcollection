@@ -1,0 +1,73 @@
+module.exports = {
+    root: true,
+    env: {
+        es6: true,
+        node: true,
+    },
+    extends: [
+        "eslint:recommended",
+        "plugin:import/errors",
+        "plugin:import/recommended",
+        "plugin:import/warnings",
+        "plugin:import/typescript",
+        "plugin:@typescript-eslint/recommended-type-checked",
+    ],
+    parser: "@typescript-eslint/parser",
+    parserOptions: {
+        project: ["tsconfig.json"],
+        sourceType: "module",
+    },
+    ignorePatterns: [
+        "/lib/**/*", // Ignore built files.
+    ],
+    plugins: [
+        "@typescript-eslint",
+        "import",
+    ],
+    rules: {
+        "@typescript-eslint/ban-ts-comment": "off",
+        "@typescript-eslint/no-empty-function": "warn",
+        "@typescript-eslint/no-explicit-any": "off",
+        "@typescript-eslint/no-non-null-assertion": "off",
+        "@typescript-eslint/no-unsafe-argument": "off",
+        "@typescript-eslint/no-unsafe-assignment": "off",
+        "@typescript-eslint/no-unsafe-call": "off",
+        "@typescript-eslint/no-unsafe-member-access": "off",
+        "@typescript-eslint/no-unused-vars": "warn",
+        "@typescript-eslint/no-var-requires": "off",
+        "@typescript-eslint/require-await": "warn",
+        "@typescript-eslint/unbound-method": "off",
+        "block-spacing": ["error", "always"],
+        "brace-style": ["warn", "1tbs", { "allowSingleLine": true }],
+        "comma-dangle": [
+            "warn",
+            {
+                "arrays": "always-multiline",
+                "imports": "always-multiline",
+                "objects": "always-multiline",
+                "functions": "only-multiline",
+            },
+        ],
+        "curly": "off",
+        "import/no-unresolved": 0,
+        "import/order": [
+            "warn",
+            {
+                "groups": ["type", "builtin", "external", ["internal", "sibling", "parent"]],
+                "newlines-between": "always",
+                "alphabetize": { "order": "asc", "caseInsensitive": true, "orderImportKind": "asc" },
+            },
+        ],
+        "indent": ["warn", 4, { "SwitchCase": 1 }],
+        "max-len": ["warn", { "code": 120 }],
+        "no-empty": "warn",
+        "no-multi-spaces": "warn",
+        "no-trailing-spaces": "warn",
+        "object-curly-spacing": ["error", "always"],
+        "padded-blocks": ["warn", "never"],
+        "prefer-const": "warn",
+        "quotes": ["error", "double"],
+        "require-jsdoc": "off",
+        "semi": ["warn", "always", { "omitLastInOneLineBlock": true }],
+    },
+};

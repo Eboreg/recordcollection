@@ -1,0 +1,16 @@
+{
+    "compilerOptions": {
+        "module": "CommonJS",
+        "noImplicitReturns": true,
+        "noUnusedLocals": false,
+        "noImplicitAny": true,
+        "outDir": "lib",
+        "sourceMap": true,
+        "strict": true,
+        "target": "ES6",
+        "lib": ["DOM"],
+        "resolveJsonModule": true,
+    },
+    "compileOnSave": true,
+    "include": ["assets/src", ".eslintrc.cjs", "webpack.config.ts"]
+}
