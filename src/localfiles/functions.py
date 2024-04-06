@@ -120,7 +120,6 @@ def scan_audio_files(
                     medium=Album.Medium.FILE,
                 )
 
-            album = album.update_from_musicbrainz()
             albums.add(album)
             album_id = album.id
 
@@ -149,6 +148,8 @@ def scan_audio_files(
 
         if track_genres:
             album.genres.add(*track_genres)
+
+        album = album.update_from_musicbrainz()
 
         print(repr(album))
 

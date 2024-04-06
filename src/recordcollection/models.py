@@ -33,7 +33,7 @@ class Track(AbstractItem):
     album = models.ForeignKey("Album", on_delete=models.CASCADE, null=True, default=None, related_name="tracks")
     artists = models.ManyToManyField("Artist", related_name="tracks", through="TrackArtist")
     duration = models.DurationField(null=True, default=None, blank=True)
-    file_path = models.CharField(max_length=1000, null=True, default=None, blank=True)
+    file_path = models.CharField(max_length=1000, null=True, default=None, blank=True, db_index=True)
     genres = models.ManyToManyField("Genre", related_name="tracks", blank=True)
 
     track_artists: models.Manager["TrackArtist"]
@@ -127,7 +127,7 @@ class Album(AbstractItem):
 
 
 class Artist(AbstractItem):
-    name = models.CharField(max_length=500)
+    name = models.CharField(max_length=500, db_index=True)
 
     class Meta:
         ordering = [Lower("name")]
