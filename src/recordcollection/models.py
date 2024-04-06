@@ -26,7 +26,7 @@ class Genre(models.Model):
 
 class Track(AbstractItem):
     id = models.BigAutoField(primary_key=True)
-    title = models.CharField(max_length=300)
+    title = models.CharField(max_length=500)
     track_number = models.SmallIntegerField(null=True, default=None, verbose_name="track #", blank=True)
     disc_number = models.SmallIntegerField(null=True, default=None, verbose_name="disc #", blank=True)
     year = models.SmallIntegerField(null=True, default=None, blank=True)
@@ -71,7 +71,7 @@ class Album(AbstractItem):
         STREAMING = "STR"
 
     id = models.BigAutoField(primary_key=True)
-    title = models.CharField(max_length=200)
+    title = models.CharField(max_length=500)
     year = models.SmallIntegerField(null=True, default=None, blank=True)
     musicbrainz_group_id = models.CharField(max_length=200, null=True, default=None, blank=True)
     artists = models.ManyToManyField("Artist", related_name="albums", through="AlbumArtist")
@@ -127,7 +127,7 @@ class Album(AbstractItem):
 
 
 class Artist(AbstractItem):
-    name = models.CharField(max_length=200)
+    name = models.CharField(max_length=500)
 
     class Meta:
         ordering = [Lower("name")]
