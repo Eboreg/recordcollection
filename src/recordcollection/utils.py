@@ -87,7 +87,7 @@ def import_musicbrainz_genres():
                 new_genres.append(Genre(name=genre_name))
 
         if new_genres:
-            Genre.objects.bulk_create(new_genres)
+            Genre.objects.bulk_create(new_genres, ignore_conflicts=True)
         if updated_genres:
             Genre.objects.bulk_update(updated_genres, fields=["name"])
 
