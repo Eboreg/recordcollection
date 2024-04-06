@@ -10,8 +10,15 @@ from django.db.models.functions import Lower
 
 from recordcollection.abstract_classes import AbstractBaseRecord
 from recordcollection.models import (
-    Album, AlbumArtist, Artist, Genre, Track, TrackArtist,
+    Album,
+    AlbumArtist,
+    Artist,
+    Genre,
+    Track,
+    TrackArtist,
 )
+from spotify.abstract_classes import AbstractSpotifyResponse
+from spotify.request import get_spotify_response
 
 
 @dataclass
@@ -53,7 +60,7 @@ class SpotifyTrack(AbstractBaseRecord):
             return value.strip()
         return super().serialize_field(key, value)
 
-    def to_track(self, album_id: int | None = None) -> Track:
+    def to_track(self, album_id: int | None = None, year: int | None = None) -> Track:
         track = Track.objects.update_or_create(
             album_id=album_id,
             disc_number=self.disc_number,
@@ -61,6 +68,7 @@ class SpotifyTrack(AbstractBaseRecord):
             defaults={
                 "spotify_id": self.id,
                 "title": self.name,
+                "year": year,
                 "duration": datetime.timedelta(seconds=round(self.duration_ms / 1000)),
             }
         )[0]
@@ -148,8 +156,14 @@ class SpotifyAlbum(AbstractBaseRecord):
                 is_compilation=is_compilation,
             )
 
-        for track in self.tracks.items:
-            track.to_track(album_id=album.id)
+        tracks = self.tracks
+        while tracks is not None:
+            for track in tracks.items:
+                track.to_track(album_id=album.id, year=year if self.album_type != "compilation" else None)
+            if tracks.next:
+                tracks = get_spotify_response(url=tracks.next, response_type=SpotifyTracksResponse)
+            else:
+                tracks = None
 
         if self.genres:
             genres = list(
@@ -172,16 +186,28 @@ class SpotifyAlbum(AbstractBaseRecord):
 
 
 @dataclass
-class SpotifyUserAlbumsResponse(AbstractBaseRecord):
-    items: list[SpotifyAlbum]
-    limit: int
-    offset: int
-    total: int
-    next: str | None = None
-    previous: str | None = None
+class SpotifyUserAlbum(AbstractBaseRecord):
+    album: SpotifyAlbum
+    added_at: datetime.datetime
 
     @classmethod
     def serialize_field(cls, key: str, value: Any):
-        if key == "items":
-            return [SpotifyAlbum.from_dict(d["album"]) for d in value]
+        if key == "added_at":
+            return datetime.datetime.fromisoformat(value)
+        if key == "album":
+            return SpotifyAlbum.from_dict(value)
         return super().serialize_field(key, value)
+
+
+@dataclass
+class SpotifyTracksResponse(AbstractSpotifyResponse[SpotifyTrack]):
+    @classmethod
+    def serialize_item(cls, value: Any) -> SpotifyTrack:
+        return SpotifyTrack.from_dict(value)
+
+
+@dataclass
+class SpotifyUserAlbumsResponse(AbstractSpotifyResponse[SpotifyUserAlbum]):
+    @classmethod
+    def serialize_item(cls, value: Any) -> SpotifyUserAlbum:
+        return SpotifyUserAlbum.from_dict(value)

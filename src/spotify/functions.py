@@ -1,7 +1,7 @@
 from collections.abc import Iterator
 
 from spotify.dataclasses import SpotifyAlbum, SpotifyUserAlbumsResponse
-from spotify.request import spotify_get
+from spotify.request import get_spotify_response, spotify_get
 
 
 def get_user_albums() -> list[SpotifyAlbum]:
@@ -9,8 +9,8 @@ def get_user_albums() -> list[SpotifyAlbum]:
     uri: str | None = "https://api.spotify.com/v1/me/albums?limit=50"
 
     while uri is not None:
-        response = SpotifyUserAlbumsResponse.from_dict(spotify_get(uri).json())
-        albums.extend(response.items)
+        response = get_spotify_response(url=uri, response_type=SpotifyUserAlbumsResponse)
+        albums.extend([item.album for item in response.items])
         uri = response.next
 
     return albums

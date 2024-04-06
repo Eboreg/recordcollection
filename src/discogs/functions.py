@@ -1,7 +1,9 @@
 import os
 
 from discogs.dataclasses import (
-    DiscogsMasterRelease, DiscogsRelease, DiscogsUserReleasesResponse,
+    DiscogsMasterRelease,
+    DiscogsRelease,
+    DiscogsUserReleasesResponse,
 )
 from discogs.request import discogs_get
 

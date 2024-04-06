@@ -1,3 +1,5 @@
+from typing import Self
+
 from django.contrib import admin
 from django.db import models
 from django.db.models.functions import Lower
@@ -13,7 +15,7 @@ class AbstractItem(models.Model):
 
 
 class Genre(models.Model):
-    name = models.CharField(max_length=100, unique=True)
+    name = models.CharField(max_length=100, unique=True, db_index=True)
 
     class Meta:
         ordering = [Lower("name")]
@@ -43,6 +45,11 @@ class Track(AbstractItem):
     def __str__(self):
         return self.title
 
+    @classmethod
+    def prefetched(cls) -> models.QuerySet[Self]:
+        return cls.objects.prefetch_related("track_artists__artist", "genres")
+
+    @admin.display(description="artist")
     def artist_string(self) -> str:
         result = ""
         track_artists = list(self.track_artists.all())
@@ -80,9 +87,16 @@ class Album(AbstractItem):
         ordering = [Lower("title")]
 
     def __str__(self):
-        if self.year:
-            return f"{self.title} ({self.year})"
         return self.title
+
+    @classmethod
+    def prefetched(cls) -> models.QuerySet[Self]:
+        return cls.objects.prefetch_related(
+            models.Prefetch("tracks", queryset=Track.prefetched().order_by("disc_number", "track_number")),
+            "album_artists__artist",
+            "artists",
+            "genres",
+        )
 
     @admin.display(description="artist")
     def artist_string(self) -> str | None:
@@ -99,6 +113,17 @@ class Album(AbstractItem):
                 result += f" {join_phrase} "
 
         return result
+
+    def update_from_musicbrainz(self) -> "Album":
+        from musicbrainz.functions import get_best_musicbrainz_album_match
+
+        match = get_best_musicbrainz_album_match(album=self)
+        if match and match.ratio >= 0.8:
+            return match.release.update_album(album=self)
+        if self.musicbrainz_id is None:
+            self.musicbrainz_id = ""
+            self.save(update_fields=["musicbrainz_id"])
+        return self
 
 
 class Artist(AbstractItem):

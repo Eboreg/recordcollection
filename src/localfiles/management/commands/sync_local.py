@@ -1,3 +1,4 @@
+import datetime
 from glob import glob
 from pathlib import Path
 
@@ -5,10 +6,12 @@ from django.core.management.base import BaseCommand, CommandParser
 
 from localfiles.functions import scan_directory_recursive
 from recordcollection.models import Album, Track
-from recordcollection.utils import import_musicbrainz_genres
+from recordcollection.utils import get_env_datetime, import_musicbrainz_genres, set_env_datetime
 
 
 class Command(BaseCommand):
+    last_sync: datetime.datetime | None
+
     def add_arguments(self, parser: CommandParser):
         parser.add_argument("path")
         parser.add_argument("--except", nargs="*", help="Path(s) to exclude")
@@ -17,6 +20,7 @@ class Command(BaseCommand):
         parser.add_argument("--total", action="store_true", help="Total resync, not just add new items")
 
     def handle(self, *args, **options):
+        self.last_sync = get_env_datetime("LAST_LOCALFILES_SYNC")
         paths = [Path(path) for path in glob(options["path"])]
         exceptions = [Path(dir) for path in options["except"] or [] for dir in glob(path)]
         existing_file_paths = list(Track.objects.exclude(file_path=None).values_list("file_path", flat=True))
@@ -45,3 +49,5 @@ class Command(BaseCommand):
                 if orphan_albums:
                     self.stdout.write(f"Deleting {orphan_albums.count()} orphan albums.")
                     orphan_albums.delete()
+
+        set_env_datetime("LAST_LOCALFILES_SYNC")

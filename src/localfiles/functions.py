@@ -8,7 +8,12 @@ from django.db.models import Q
 from tinytag import TinyTag
 
 from recordcollection.models import (
-    Album, AlbumArtist, Artist, Genre, Track, TrackArtist,
+    Album,
+    AlbumArtist,
+    Artist,
+    Genre,
+    Track,
+    TrackArtist,
 )
 from recordcollection.utils import group_and_count, int_or_none
 
@@ -115,6 +120,7 @@ def scan_audio_files(
                     medium=Album.Medium.FILE,
                 )
 
+            album = album.update_from_musicbrainz()
             albums.add(album)
             album_id = album.id
 

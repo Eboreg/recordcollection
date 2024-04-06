@@ -1,13 +1,15 @@
-from pprint import pprint
+import json
 
 from django.core.management.base import BaseCommand, CommandParser
 
-from spotify.functions import get_album
+from spotify.request import spotify_get
 
 
 class Command(BaseCommand):
     def add_arguments(self, parser: CommandParser):
-        parser.add_argument("album_id")
+        parser.add_argument("uri")
 
     def handle(self, *args, **options):
-        pprint(get_album(options["album_id"]))
+        j = spotify_get(options["uri"]).json()
+        jj = json.dumps(j, indent=4)
+        print(jj)

@@ -2,15 +2,22 @@ import base64
 import datetime
 import os
 import sys
+import time
 import webbrowser
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, HTTPServer
+from typing import Type, TypeVar
 from urllib.parse import parse_qs, urlparse
 
 import requests
 from django.utils import timezone
 
+from recordcollection.abstract_classes import AbstractBaseRecord
+from spotify.abstract_classes import AbstractSpotifyResponse
 from spotify.models import SpotifyAccessToken
+
+
+ABR = TypeVar("ABR", bound=AbstractBaseRecord)
 
 
 REDIRECT_HOST = "localhost"
@@ -93,6 +100,15 @@ def authorize():
     with HTTPServer((REDIRECT_HOST, REDIRECT_PORT), AuthCallbackHandler) as httpd:
         httpd.timeout = 60
         httpd.handle_request()
+
+
+def get_spotify_response(url: str, response_type: Type[AbstractSpotifyResponse[ABR]]) -> AbstractSpotifyResponse[ABR]:
+    response = spotify_get(url=url)
+    if response.status_code >= 400:
+        time.sleep(5)
+        return get_spotify_response(url, response_type)
+
+    return response_type.from_dict(response.json())
 
 
 def spotify_get(url: str) -> requests.Response:

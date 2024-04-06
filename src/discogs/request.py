@@ -3,7 +3,7 @@ import time
 
 import requests
 
-from recordcollection import __version__
+from recordcollection.utils import get_user_agent
 
 
 request_times: list[float] = []
@@ -22,7 +22,7 @@ def discogs_get(url: str) -> requests.Response:
         time.sleep(sleep_seconds)
     headers = {
         "Authorization": f"Discogs key={api_key}, secret={api_secret}",
-        "User-Agent": f"recordcollection/{__version__} +robert@huseli.us",
+        "User-Agent": get_user_agent(),
     }
     response = requests.get(url, timeout=10, headers=headers)
     if response.status_code == 429:

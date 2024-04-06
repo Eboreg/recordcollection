@@ -1,8 +1,12 @@
+import datetime
+import os
 import re
 from typing import Any, Iterable, TypeVar
 
+import dotenv
 import requests
 
+from recordcollection import __version__
 from recordcollection.models import Artist, Genre
 
 
@@ -45,10 +49,12 @@ def import_musicbrainz_genres():
         "EBM",
         "EDM",
         "FM Synthesis",
+        "Hi-NRG",
         "IDM",
         "MPB",
         "OPM",
         "RKT",
+        "Trap EDM",
         "UK Drill",
         "UK Funky",
         "UK Garage",
@@ -58,17 +64,53 @@ def import_musicbrainz_genres():
         "UK82",
     ]
     special_cases_dict = {g.lower(): g for g in special_cases}
+
     if response.status_code == 200:
-        old_genres = [g.lower() for g in Genre.objects.values_list("name", flat=True)]
+        old_genres = list(Genre.objects.all())
         new_genres = []
+        updated_genres = []
+
         for line in response.text.splitlines():
-            if line.lower() not in old_genres:
-                if line.lower() in special_cases_dict:
-                    new_genres.append(Genre(name=special_cases_dict[line.lower()]))
-                else:
-                    new_genres.append(Genre(name=capitalize(line)))
-        Genre.objects.bulk_create(new_genres)
+            genre_name: str
+            if line.lower() in special_cases_dict:
+                genre_name = special_cases_dict[line.lower()]
+            else:
+                genre_name = capitalize(line)
+
+            matches = [g for g in old_genres if g.name.lower() == line.lower()]
+            if matches:
+                old_genre = matches[0]
+                if old_genre.name != genre_name:
+                    old_genre.name = genre_name
+                    updated_genres.append(old_genre)
+            else:
+                new_genres.append(Genre(name=genre_name))
+
+        if new_genres:
+            Genre.objects.bulk_create(new_genres)
+        if updated_genres:
+            Genre.objects.bulk_update(updated_genres, fields=["name"])
 
 
 def delete_orphan_artists():
     Artist.objects.filter(albums=None, tracks=None).delete()
+
+
+def get_user_agent() -> str:
+    return f"recordcollection/{__version__} +robert@huseli.us"
+
+
+def get_env_datetime(key: str) -> datetime.datetime | None:
+    timestamp = os.environ.get(key, None)
+    if timestamp:
+        return datetime.datetime.fromtimestamp(float(timestamp), tz=datetime.timezone.utc)
+    return None
+
+
+def set_env_datetime(key: str, value: datetime.datetime | None = None):
+    value = value or datetime.datetime.now(tz=datetime.timezone.utc)
+    dotenv.set_key(
+        dotenv_path=dotenv.find_dotenv(),
+        key_to_set=key,
+        value_to_set=str(value.timestamp()),
+    )

@@ -1,0 +1,7 @@
+select.admin-autocomplete {
+    width: 40em !important;
+}
+
+.field-join_phrase input {
+    width: 10em;
+}

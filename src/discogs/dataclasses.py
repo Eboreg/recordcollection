@@ -11,8 +11,16 @@ from django.db.models.functions import Lower
 
 from recordcollection.abstract_classes import AbstractBaseRecord
 from recordcollection.models import (
-    Album, AlbumArtist, Artist, Genre, Track, TrackArtist,
+    Album,
+    AlbumArtist,
+    Artist,
+    Genre,
+    Track,
+    TrackArtist,
 )
+
+
+current_year = datetime.date.today().year
 
 
 @dataclass
@@ -139,7 +147,7 @@ class DiscogsTrack(AbstractBaseRecord):
             return value.strip()
         return super().serialize_field(key, value)
 
-    def to_track(self, album_id: int, disc_number: int, track_number: int) -> Track:
+    def to_track(self, album_id: int, disc_number: int, track_number: int, year: int | None = None) -> Track:
         duration: datetime.timedelta | None = None
 
         duration_match = re.match(r"(?:(\d+):)?(\d+):(\d\d)$", self.duration)
@@ -163,6 +171,7 @@ class DiscogsTrack(AbstractBaseRecord):
             defaults={
                 "title": self.title,
                 "duration": duration,
+                "year": year,
             },
         )[0]
         for artist_idx, artist in enumerate(self.artists):
@@ -219,6 +228,10 @@ class DiscogsRelease(AbstractBaseRecord):
             return [DiscogsTrack.from_dict(d) for d in value]
         if key == "title" and isinstance(value, str):
             return value.strip()
+        if key == "year":
+            if isinstance(value, int) and 1000 <= value <= current_year:
+                return value
+            return None
         return super().serialize_field(key, value)
 
     def get_medium(self) -> Album.Medium | None:
@@ -273,14 +286,14 @@ class DiscogsRelease(AbstractBaseRecord):
             album.discogs_id = self.id
             album.is_compilation = is_compilation
             album.medium = medium or album.medium
-            if album.year is None and self.year and self.year > 0:
+            if album.year is None:
                 album.year = self.year
             album.save(update_fields=["discogs_id", "year", "is_compilation", "medium"])
         else:
             album = Album.objects.create(
                 discogs_id=self.id,
                 title=self.title,
-                year=self.year if self.year and self.year > 0 else None,
+                year=self.year,
                 is_compilation=is_compilation,
                 medium=medium,
             )
@@ -291,6 +304,7 @@ class DiscogsRelease(AbstractBaseRecord):
                 album_id=album.id,
                 disc_number=disc_number,
                 track_number=track_number,
+                year=self.year if not is_compilation else None,
             )
 
         if genres_and_styles:
