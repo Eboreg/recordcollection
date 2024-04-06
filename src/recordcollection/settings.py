@@ -29,7 +29,7 @@ DEBUG = "DEBUG" in os.environ and os.environ["DEBUG"].lower() not in ("false", "
 
 ALLOWED_HOSTS: list[str] = os.environ.get("ALLOWED_HOSTS", "").split(",")
 
-INTERNAL_IPS = ["127.0.0.1"]
+INTERNAL_IPS = os.environ.get("INTERNAL_IPS", "").split(",")
 
 FORCE_SCRIPT_NAME = os.environ.get("FORCE_SCRIPT_NAME", None)
 
