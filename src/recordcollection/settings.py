@@ -31,9 +31,9 @@ SECRET_KEY = os.environ.get("SECRET_KEY")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = env_boolean("DEBUG")
 
-ALLOWED_HOSTS: list[str] = os.environ.get("ALLOWED_HOSTS", "").split(",")
+ALLOWED_HOSTS: list[str] = os.environ.get("ALLOWED_HOSTS", ".localhost,127.0.0.1,[::1]").split(",")
 
-INTERNAL_IPS = os.environ.get("INTERNAL_IPS", "").split(",")
+INTERNAL_IPS = os.environ.get("INTERNAL_IPS", "127.0.0.1").split(",")
 
 FORCE_SCRIPT_NAME = os.environ.get("FORCE_SCRIPT_NAME", None)
 
