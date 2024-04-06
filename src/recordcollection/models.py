@@ -132,7 +132,9 @@ class Artist(AbstractItem):
     class Meta:
         ordering = [Lower("name")]
         constraints = [
-            models.UniqueConstraint(Lower("name"), name="unique_artist_name"),
+            # MariaDB doesn't support unique constraints on expressions:
+            models.UniqueConstraint(Lower("name"), name="unique_artist_name_ci"),
+            models.UniqueConstraint("name", name="unique_artist_name"),
         ]
 
     def __str__(self):
