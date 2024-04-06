@@ -137,7 +137,6 @@ USE_TZ = True
 
 STATIC_URL = FORCE_SCRIPT_NAME + "/static/" if FORCE_SCRIPT_NAME else "/static/"
 STATIC_ROOT = BASE_DIR / "static"
-STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 STORAGES = {
     "default": {
         "BACKEND": "django.core.files.storage.FileSystemStorage",

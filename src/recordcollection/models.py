@@ -26,7 +26,7 @@ class Genre(models.Model):
 
 class Track(AbstractItem):
     id = models.BigAutoField(primary_key=True)
-    title = models.CharField(max_length=500)
+    title = models.CharField(max_length=500, db_index=True)
     track_number = models.SmallIntegerField(null=True, default=None, verbose_name="track #", blank=True)
     disc_number = models.SmallIntegerField(null=True, default=None, verbose_name="disc #", blank=True)
     year = models.SmallIntegerField(null=True, default=None, blank=True)
@@ -71,8 +71,8 @@ class Album(AbstractItem):
         STREAMING = "STR"
 
     id = models.BigAutoField(primary_key=True)
-    title = models.CharField(max_length=500)
-    year = models.SmallIntegerField(null=True, default=None, blank=True)
+    title = models.CharField(max_length=500, db_index=True)
+    year = models.SmallIntegerField(null=True, default=None, blank=True, db_index=True)
     musicbrainz_group_id = models.CharField(max_length=200, null=True, default=None, blank=True)
     artists = models.ManyToManyField("Artist", related_name="albums", through="AlbumArtist")
     is_compilation = models.BooleanField(default=False, verbose_name="V/A")
@@ -154,7 +154,7 @@ class Artist(AbstractItem):
 
 class AbstractArtistCredit(models.Model):
     artist = models.ForeignKey("Artist", on_delete=models.CASCADE, related_name="+")
-    position = models.SmallIntegerField(default=0)
+    position = models.SmallIntegerField(default=0, db_index=True)
     join_phrase = models.CharField(max_length=100, default="/", blank=True)
 
     class Meta:
