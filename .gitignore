@@ -6,3 +6,5 @@
 **/*.sqlite3
 **/.mypy_cache
 **/*.egg-info
+/src/static
+/uwsgi.ini
