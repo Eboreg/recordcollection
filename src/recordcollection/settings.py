@@ -14,6 +14,10 @@ import os
 from pathlib import Path
 
 
+def env_boolean(key: str):
+    return key in os.environ and os.environ[key].lower() not in ("false", "no", "0")
+
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -25,7 +29,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ.get("SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = "DEBUG" in os.environ and os.environ["DEBUG"].lower() not in ("false", "0")
+DEBUG = env_boolean("DEBUG")
 
 ALLOWED_HOSTS: list[str] = os.environ.get("ALLOWED_HOSTS", "").split(",")
 
@@ -153,3 +157,12 @@ WHITENOISE_STATIC_PREFIX = "/static/"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 SILENCED_SYSTEM_CHECKS = ["models.W044"]
+
+
+def show_toolbar(request):
+    return env_boolean("SHOW_DEBUG_TOOLBAR")
+
+
+DEBUG_TOOLBAR_CONFIG = {
+    "SHOW_TOOLBAR_CALLBACK": show_toolbar,
+}
