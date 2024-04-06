@@ -26,7 +26,7 @@ class Genre(models.Model):
 
 class Track(AbstractItem):
     id = models.BigAutoField(primary_key=True)
-    title = models.CharField(max_length=200)
+    title = models.CharField(max_length=300)
     track_number = models.SmallIntegerField(null=True, default=None, verbose_name="track #", blank=True)
     disc_number = models.SmallIntegerField(null=True, default=None, verbose_name="disc #", blank=True)
     year = models.SmallIntegerField(null=True, default=None, blank=True)
