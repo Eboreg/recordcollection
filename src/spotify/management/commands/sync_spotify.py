@@ -53,7 +53,7 @@ class Command(BaseCommand):
         uri: str | None = "https://api.spotify.com/v1/me/albums?limit=50"
 
         while uri is not None:
-            if total:
+            if total or not self.last_sync:
                 self.stdout.write(f"Fetching data (page {page}/{pages or '?'}) ...")
             else:
                 self.stdout.write(f"Fetching data (page {page}) ...")

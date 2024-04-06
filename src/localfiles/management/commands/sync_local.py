@@ -6,7 +6,11 @@ from django.core.management.base import BaseCommand, CommandParser
 
 from localfiles.functions import scan_directory_recursive
 from recordcollection.models import Album, Track
-from recordcollection.utils import get_env_datetime, import_musicbrainz_genres, set_env_datetime
+from recordcollection.utils import (
+    get_env_datetime,
+    import_musicbrainz_genres,
+    set_env_datetime,
+)
 
 
 class Command(BaseCommand):
