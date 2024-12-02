@@ -3,7 +3,7 @@ import operator
 import re
 
 from django.contrib import admin
-from django.db.models import CharField, Count, OuterRef, Q, Subquery
+from django.db.models import CharField, Count, OuterRef, Q, Subquery, Sum
 from django.db.models.functions import Concat, Lower
 from django.db.models.query import QuerySet
 from django.http import HttpRequest
@@ -114,6 +114,7 @@ class AlbumAdmin(AbstractBaseAdmin):
         "medium",
         "genre_list",
         "is_compilation",
+        "play_count",
     ]
     list_filter = [
         "is_compilation",
@@ -138,6 +139,7 @@ class AlbumAdmin(AbstractBaseAdmin):
                 artist_order=Subquery(
                     AlbumArtist.objects.filter(album=OuterRef("pk")).values(name=Lower("artist__name"))[:1],
                 ),
+                play_count=Sum("tracks__play_count"),
             )
             .order_by("artist_order", "year")
         )
@@ -151,6 +153,10 @@ class AlbumAdmin(AbstractBaseAdmin):
         return format_html(
             "<br>".join(f"<span style=\"white-space:nowrap\">{genre.name}</span>" for genre in obj.genres.all())
         )
+
+    @admin.display(ordering="play_count")
+    def play_count(self, obj):
+        return obj.play_count
 
     @admin.display(ordering=Lower("title"), description="title")
     def title_display(self, obj: Album):
@@ -172,7 +178,7 @@ class AlbumAdmin(AbstractBaseAdmin):
 class ArtistAdmin(AbstractBaseAdmin):
     fields = ("name", ("musicbrainz_id", "spotify_id", "discogs_id"))
     inlines = [ArtistAlbumInline]
-    list_display = ["name", "album_count", "track_count"]
+    list_display = ["name", "album_count", "track_count", "play_count"]
     list_filter = [AlbumCountFilter, HasMusicBrainzIDFilter]
     search_fields = ["name"]
 
@@ -180,6 +186,7 @@ class ArtistAdmin(AbstractBaseAdmin):
         return super().get_queryset(request).annotate(
             album_count=Count("albums", distinct=True),
             track_count=Count("tracks", distinct=True),
+            play_count=Sum("albums__tracks__play_count", distinct=True),
         )
 
     @admin.display(ordering="album_count", description="# albums")
@@ -192,6 +199,10 @@ class ArtistAdmin(AbstractBaseAdmin):
                 obj.album_count,
             )
         return obj.album_count
+
+    @admin.display(ordering="play_count")
+    def play_count(self, obj):
+        return obj.play_count
 
     @admin.display(ordering="track_count", description="# tracks")
     def track_count(self, obj):
@@ -224,6 +235,7 @@ class TrackAdmin(AbstractBaseAdmin):
         "year",
         "genre_list",
         "rounded_duration",
+        "play_count",
         "album_medium",
     ]
     list_filter = [

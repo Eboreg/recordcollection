@@ -52,6 +52,7 @@ INSTALLED_APPS = [
     "spotify",
     "localfiles",
     "musicbrainz",
+    "lastfm",
 ]
 
 MIDDLEWARE = [

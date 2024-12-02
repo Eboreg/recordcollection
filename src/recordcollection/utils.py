@@ -1,7 +1,8 @@
 import datetime
 import os
 import re
-from typing import Any, Iterable, TypeVar
+from copy import deepcopy
+from typing import Any, Iterable, Iterator, Sequence, TypeVar
 
 import dotenv
 import requests
@@ -114,3 +115,38 @@ def set_env_datetime(key: str, value: datetime.datetime | None = None):
         key_to_set=key,
         value_to_set=str(value.timestamp()),
     )
+
+
+def merge_dicts(d1: dict, d2: dict) -> dict:
+    result = deepcopy(d1)
+    for key, value in d2.items():
+        if key in result and isinstance(result[key], dict) and isinstance(value, dict):
+            result[key] = merge_dicts(result[key], value)
+        else:
+            result[key] = value
+    return result
+
+
+def string_to_timedelta(s: str) -> datetime.timedelta | None:
+    match = re.match(r"(?:(?P<hours>\d+):)?(?P<minutes>\d+):(?P<seconds>\d+)$", string=s)
+
+    if match:
+        groups = match.groupdict()
+        return datetime.timedelta(
+            hours=int(groups.get("hours", "0") or "0"),
+            minutes=int(groups.get("minutes", "0") or "0"),
+            seconds=int(groups.get("seconds", "0") or "0"),
+        )
+
+    return None
+
+
+def sanitize_filename(filename: str) -> str:
+    return re.sub(r"[/\\?%*:|\"<>\x7F\x00-\x1F]", "-", filename)
+
+
+def chunked(items: Sequence[_T], size: int) -> Iterator[Sequence[_T]]:
+    chunk_idx = 0
+    while chunk_idx * size < len(items):
+        yield items[chunk_idx * size:(chunk_idx + 1) * size]
+        chunk_idx += 1

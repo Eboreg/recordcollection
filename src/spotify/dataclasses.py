@@ -5,6 +5,7 @@ import re
 from dataclasses import dataclass
 from typing import Any, Literal
 
+from country_list import available_languages, countries_for_language
 from django.db.models import Q
 from django.db.models.functions import Lower
 
@@ -44,7 +45,7 @@ class SpotifyImage(AbstractBaseRecord):
 
 
 @dataclass
-class SpotifyTrack(AbstractBaseRecord):
+class SpotifySimplifiedTrack(AbstractBaseRecord):
     artists: list[SpotifyArtist]
     disc_number: int
     duration_ms: int
@@ -59,6 +60,12 @@ class SpotifyTrack(AbstractBaseRecord):
         if key == "name" and isinstance(value, str):
             return value.strip()
         return super().serialize_field(key, value)
+
+    @property
+    def artist_string(self) -> str | None:
+        if not self.artists:
+            return None
+        return " / ".join([a.name for a in self.artists])
 
     def to_track(self, album_id: int | None = None, year: int | None = None) -> Track:
         track = Track.objects.update_or_create(
@@ -83,10 +90,67 @@ class SpotifyTrack(AbstractBaseRecord):
 
 
 @dataclass
-class SpotifyAlbum(AbstractBaseRecord):
+class SpotifyTrack(SpotifySimplifiedTrack):
+    album: "SpotifySimplifiedAlbum"
+    available_markets: list[str] | None = None
+
+    @dataclass
+    class LocalizedAvailableMarket:
+        code: str
+        name: str | None
+
+        def __str__(self):
+            if self.name:
+                return f"{self.name} ({self.code})"
+            return self.code
+
+    @classmethod
+    def serialize_field(cls, key: str, value: Any):
+        if key == "album":
+            return SpotifySimplifiedAlbum.from_dict(value)
+        return super().serialize_field(key, value)
+
+    def get_localized_available_markets(
+        self,
+        language: str = "en",
+        codeorder: bool = False,
+    ) -> list["SpotifyTrack.LocalizedAvailableMarket"]:
+        markets: list[SpotifyTrack.LocalizedAvailableMarket] = []
+        if language.lower() not in available_languages():
+            language = "en"
+        countries = dict(countries_for_language(language.lower()))
+        for code in self.available_markets or []:
+            country = countries.get(code, None)
+            markets.append(SpotifyTrack.LocalizedAvailableMarket(code=code, name=country))
+        return sorted(markets, key=lambda m: m.code if codeorder else m.name or m.code)
+
+
+@dataclass
+class SpotifySimplifiedAlbum(AbstractBaseRecord):
+    album_type: Literal["album", "single", "compilation"]
+    artists: list[SpotifyArtist]
+    id: str
+    images: list[SpotifyImage]
+    name: str
+    release_date: str
+    total_tracks: int
+
+    @classmethod
+    def serialize_field(cls, key: str, value: Any):
+        if key == "images":
+            return [SpotifyImage.from_dict(d) for d in value]
+        if key == "artists":
+            return [SpotifyArtist.from_dict(d) for d in value]
+        if key == "name" and isinstance(value, str):
+            return value.strip()
+        return super().serialize_field(key, value)
+
+
+@dataclass
+class SpotifyAlbum(SpotifySimplifiedAlbum):
     @dataclass
     class Tracks(AbstractBaseRecord):
-        items: list[SpotifyTrack]
+        items: list[SpotifySimplifiedTrack]
         limit: int
         offset: int
         total: int
@@ -96,29 +160,16 @@ class SpotifyAlbum(AbstractBaseRecord):
         @classmethod
         def serialize_field(cls, key: str, value: Any):
             if key == "items":
-                return [SpotifyTrack.from_dict(d) for d in value]
+                return [SpotifySimplifiedTrack.from_dict(d) for d in value]
             return super().serialize_field(key, value)
 
-    album_type: Literal["album", "single", "compilation"]
-    artists: list[SpotifyArtist]
     genres: list[str]
-    id: str
-    images: list[SpotifyImage]
-    name: str
-    release_date: str
-    total_tracks: int
     tracks: Tracks
 
     @classmethod
     def serialize_field(cls, key: str, value: Any):
         if key == "tracks":
             return cls.Tracks.from_dict(value)
-        if key == "images":
-            return [SpotifyImage.from_dict(d) for d in value]
-        if key == "artists":
-            return [SpotifyArtist.from_dict(d) for d in value]
-        if key == "name" and isinstance(value, str):
-            return value.strip()
         return super().serialize_field(key, value)
 
     def to_album(self) -> Album:
@@ -200,10 +251,10 @@ class SpotifyUserAlbum(AbstractBaseRecord):
 
 
 @dataclass
-class SpotifyTracksResponse(AbstractSpotifyResponse[SpotifyTrack]):
+class SpotifyTracksResponse(AbstractSpotifyResponse[SpotifySimplifiedTrack]):
     @classmethod
-    def serialize_item(cls, value: Any) -> SpotifyTrack:
-        return SpotifyTrack.from_dict(value)
+    def serialize_item(cls, value: Any) -> SpotifySimplifiedTrack:
+        return SpotifySimplifiedTrack.from_dict(value)
 
 
 @dataclass

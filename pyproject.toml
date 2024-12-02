@@ -18,6 +18,7 @@ dependencies = [
     "tinytag",
     "levenshtein",
     "whitenoise",
+    "country_list",
 ]
 dynamic = ["version"]
 
@@ -51,6 +52,7 @@ disable = [
     "too-many-statements",
     "too-many-ancestors",
     "too-many-return-statements",
+    "too-many-arguments",
 ]
 ignore = [".venv"]
 max-line-length = 119

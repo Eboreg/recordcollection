@@ -35,6 +35,7 @@ class Track(AbstractItem):
     duration = models.DurationField(null=True, default=None, blank=True)
     file_path = models.CharField(max_length=1000, null=True, default=None, blank=True, db_index=True)
     genres = models.ManyToManyField("Genre", related_name="tracks", blank=True)
+    play_count = models.IntegerField(default=0)
 
     track_artists: models.Manager["TrackArtist"]
     album_id: int | None
